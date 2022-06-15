@@ -1,0 +1,74 @@
+#Name: Clayton Baker
+#Class: CAP6771
+#Date: 20JUN2022
+
+#Advanced Classification Methods Assignment
+
+summary(clb173_dividends)
+table(clb173_dividends$dividendPaid)
+pie(table(clb173_dividends$dividendPaid), main="clb173 dividendPaid")
+
+install.packages("tidyverse")
+library(tidyverse)
+
+clb173_dividends %>%
+  pivot_longer(2:6, names_to = "attributes") %>%
+  ggplot(aes(attributes, value, fill=attributes)) +
+  geom_boxplot() + ggtitle("clb173 Original Boxplot")
+
+normalize <- function(x) {return ((x - min(x)) / (max(x) - min(x)))}
+clb173_normalizedDividends <- as.data.frame(lapply(clb173_dividends, normalize))
+View(clb173_normalizedDividends)
+
+clb173_normalizedDividends %>%
+  pivot_longer(2:6, names_to = "attributes") %>%
+  ggplot(aes(attributes, value, fill=attributes)) +
+  geom_boxplot() + ggtitle("clb173 Normalized Boxplot")
+
+split <- sample(nrow(clb173_normalizedDividends),floor(nrow(clb173_normalizedDividends)*0.7))
+
+clb173_trainingSet <- clb173_normalizedDividends[split,]
+clb173_testingSet <- clb173_normalizedDividends[-split,]
+
+install.packages("neuralnet")
+library(neuralnet)
+
+clb173_nn <- neuralnet(dividendPaid ~ freeCashFlowPerShare + earningsGrowth +
+            debtToEquityRatio + marketCapitalization + currentRatio, data=clb173_trainingSet,
+            hidden=c(2,1), linear.output = FALSE, threshold = 0.01)
+
+clb173_nn$result.matrix
+
+plot(clb173_nn)
+
+clb173_testingSubset <- subset(clb173_testingSet, 
+select = c("freeCashFlowPerShare", "earningsGrowth", "debtToEquityRatio", "marketCapitalization", "currentRatio"))
+
+nn.results <- compute(clb173_nn, clb173_testingSubset)
+
+clb173_results <- data.frame(actual = clb173_testingSet$dividendPaid, prediction = nn.results$net.result)
+roundedresults <- sapply(clb173_results,round,digits=0)
+roundedresultsdf=data.frame(roundedresults)
+attach(roundedresultsdf)
+table(prediction,actual)
+
+library(caret)
+confusionMatrix(table(prediction,actual), positive = "1")
+
+library(e1071)
+clb173_normalizedDividends$dividendPaid <- as.factor(clb173_normalizedDividends$dividendPaid)
+
+clb173_svmModelTuning.out <- tune(svm, dividendPaid ~., data = clb173_normalizedDividends, 
+                                  kernel="radial",
+                                  ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100)),
+                                  scale = TRUE)
+
+clb173_svmModel <- clb173_svmModelTuning.out$best.model
+clb173_svmModel
+
+clb173_svmPredictions <- predict(clb173_svmModel,clb173_normalizedDividends)
+confusionMatrix(table(actual=clb173_dividends$dividendPaid, prediction=clb173_svmPredictions), positive="1")
+
+
+#clb173_results <- data.frame(actual = clb173_testingSet$dividend, prediction = nn.results$net.result)
+#table(prediction,actual)
