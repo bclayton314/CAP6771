@@ -1,3 +1,6 @@
+Name: Clayton Baker
+Class: CAP6771
+
 ls()
 rm(list=ls())
 
