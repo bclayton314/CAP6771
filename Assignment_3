@@ -1,0 +1,73 @@
+ls()
+rm(list=ls())
+
+clb173_HomeEquityLoans <- read.csv("~/DataMiningAssignment3/HomeEquityLoans.csv", stringsAsFactors=TRUE)
+View(clb173_HomeEquityLoans)
+
+library(arules)
+str(clb173_HomeEquityLoans)
+
+clb173_HomeEquityLoans$children <- as.factor(clb173_HomeEquityLoans$children)
+str(clb173_HomeEquityLoans)
+
+rules <- apriori(clb173_HomeEquityLoans)
+inspect(rules)
+
+clb173rules <- apriori(clb173_HomeEquityLoans, parameter = list(minlen=3, supp=0.1, conf=0.8), appearance=list(rhs=c("home_equity_loan=NO", "home_equity_loan=YES"), default="lhs"), control=list(verbose=T))
+
+clb173rules.sorted <- sort(clb173rules, by="lift")
+inspect(clb173rules.sorted)
+
+clb173rules.sorted <- sort(clb173rules, by="lift")
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="count")
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="confidence")
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="confidence")
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="support")
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="lift", decreasing = FALSE)
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="count", decreasing = FALSE)
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="confidence", decreasing = FALSE)
+inspect(clb173rules.sorted[1:5])
+
+clb173rules.sorted <- sort(clb173rules, by="support", decreasing = FALSE)
+inspect(clb173rules.sorted[1:5])
+inspect(clb173rules.sorted)
+
+clb173rules.sorted <- sort(clb173rules, by="lift")
+inspect(clb173rules.sorted[1:5])
+
+detach("package:arules", unload = TRUE)
+library(rpart)
+
+install.packages("caret")
+library(caret)
+
+install.packages("e1071")
+library(e1071)
+
+clb173_HomeEquityLoans$home_equity_loan <- as.factor(clb173_HomeEquityLoans$home_equity_loan)
+split <- sample(nrow(clb173_HomeEquityLoans),floor(nrow(clb173_HomeEquityLoans)*0.7))
+
+detach("package:arules", unload = TRUE)
+library(rpart)
+
+clb173_trainingSet <- clb173_HomeEquityLoans[split,]
+clb173_testingSet <- clb173_HomeEquityLoans[-split,]
+View(clb173rules)
+
+detach("package:arules", unload = TRUE)
+HomeEquityLoans <- read.csv("~/DataMiningAssignment3/HomeEquityLoans.csv", stringsAsFactors=TRUE)
+View(HomeEquityLoans)
