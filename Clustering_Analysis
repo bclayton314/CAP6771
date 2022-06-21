@@ -1,0 +1,103 @@
+Name: Clayton Baker
+Class: CAP6771
+
+View(mtcars)
+str(mtcars)
+summary(mtcars)
+
+table(mtcars$cyl)
+pie(table(mtcars$cyl), main="clb173 Number of Cylinders")
+
+table(mtcars$vs)
+pie(table(mtcars$vs), main="clb173 Engine Shape")
+
+table(mtcars$am)
+pie(table(mtcars$am), main="clb173 Transmission Type")
+
+table(mtcars$gear)
+pie(table(mtcars$gear), main="clb173 Number of Gears")
+
+table(mtcars$carb)
+pie(table(mtcars$carb), main="clb173 Number of Carburetors")
+
+##-----------------------------------------------------------
+# Start of k-means clustering
+##-----------------------------------------------------------
+set.seed(1126)   # Setting seed
+clb173_kmeans.result <- kmeans(mtcars, 3)
+clb173_kmeans.result
+
+plot(mtcars[, c("mpg", "disp")], col=clb173_kmeans.result$cluster, main="clb173 k-means mpg vs. displacement")
+points(clb173_kmeans.result$centers[, c("mpg","disp")], col=1:3, pch = 8, cex=2)
+
+plot(mtcars[, c("hp", "qsec")], col=clb173_kmeans.result$cluster, main="clb173 k-means hp vs. 1/4 mile time")
+points(clb173_kmeans.result$centers[, c("hp","qsec")], col=1:3, pch = 8, cex=2)
+
+##-----------------------------------------------------------
+# Start of hierarchical clustering
+##-----------------------------------------------------------
+# Finding distance matrix
+clb173_distance_matrix <- dist(mtcars, method = 'euclidean')
+clb173_distance_matrix
+
+# Create the hierarchical clustering model
+set.seed(240) # Set the seed
+clb173_hierarchy_cluster <- hclust(clb173_distance_matrix, method = "average")
+clb173_hierarchy_cluster
+
+plot(clb173_hierarchy_cluster, main="clb173 Hierarchical Cluster")
+clb173_fit <- cutree(clb173_hierarchy_cluster, k = 3 )
+clb173_fit
+table(clb173_fit)
+rect.hclust(clb173_hierarchy_cluster, k = 3, border = "green")
+
+table(clb173_fit)
+pie(table(clb173_fit), main="clb173 Hierarchical Cluster Assignments")
+
+install.packages("cluster")
+library(cluster)
+
+clb173_pam.result <- pam(mtcars, 3)
+clb173_pam.result
+
+plot(clb173_pam.result)
+
+install.packages("dbscan")
+library(dbscan)
+library(ggplot2)
+library(data.table)
+
+distance_matrix <- as.matrix(dist(scale(mtcars)))
+pca <- prcomp(distance_matrix)
+embedding <- data.table(pca$x[, 1:2])
+embedding[, CarNames := rownames(mtcars)]
+ggplot(embedding, aes(x = PC1, y = PC2)) +
+  geom_point(size = 10, colour = "steelblue", alpha = 0.3) +
+  geom_text(aes(label = CarNames), check_overlap = TRUE) +
+  theme_minimal()
+
+embedding[, DClusters := dbscan(scale(mtcars),
+                                eps = 2.0,
+                                minPts = 3)$cluster]
+ggplot(embedding, aes(x = PC1, y = PC2)) +  
+  geom_point(aes(colour = factor(DClusters)), size = 10, alpha = 0.3) +  
+  geom_text(aes(label = CarNames), check_overlap = TRUE) +  
+  theme_minimal()
+
+embedding[, DClusters := dbscan(scale(mtcars),                                            
+                                eps = 2.5,                                 
+                                minPts = 3)$cluster]
+ggplot(embedding, aes(x = PC1, y = PC2)) +  
+  geom_point(aes(colour = factor(DClusters)), size = 10, alpha = 0.3) +  
+  geom_text(aes(label = CarNames), check_overlap = TRUE) +  
+  theme_minimal()
+
+install.packages("mclust")
+
+library(mclust)
+cars_em <- Mclust(scale(mtcars), G = 4)
+embedding[, EMClusters := cars_em$classification]
+ggplot(embedding, aes(x = PC1, y = PC2)) +
+  geom_point(aes(colour = factor(EMClusters)), size = 10, alpha = 0.3) +
+  geom_text(aes(label = CarNames), check_overlap = TRUE) +
+  theme_minimal()
