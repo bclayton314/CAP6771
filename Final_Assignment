@@ -1,0 +1,295 @@
+#Remove existing data objects from the environment
+rm(list=ls())
+
+#detaches the neuralnet package
+# The following error is returned if the package is already detached, so it can be disregarded
+# Error in detach("package:neuralnet", unload = TRUE) : 
+#  invalid 'name' argument
+detach("package:neuralnet", unload = TRUE)
+
+#Install the dplyr package
+install.packages("dplyr")
+library(dplyr)
+
+#Import the data and leave Strings as factors checked (stringsAsFactors=TRUE)
+#Change the path 
+clb173_PhishingTestData <- read.csv("~/FinalAssignment/clb173_PhishingTestData.csv", stringsAsFactors=TRUE)
+View(clb173_PhishingTestData)
+
+#================================================================================================
+#================================================================================================
+#Create a column for the numeric value of the number of devices
+clb173_PhishingTestData$NumericNumberOfDevices<-case_when(
+  clb173_PhishingTestData$NumberOfDevices=="1" ~ 1,
+  clb173_PhishingTestData$NumberOfDevices=="2 or 3" ~ 2.5,
+  clb173_PhishingTestData$NumberOfDevices=="4 or 5" ~ 4.5,
+  clb173_PhishingTestData$NumberOfDevices=="6 to 10" ~ 8,
+  clb173_PhishingTestData$NumberOfDevices=="More than 10" ~ 11,
+   TRUE ~ 0)
+
+#Create a column for the numeric value of the test results
+#Pass =1
+#Fail=0
+clb173_PhishingTestData$NumericPhishingTestResult<-as.integer(ifelse(grepl("PASS", toupper(clb173_PhishingTestData$PhishingTestResult)),1,0))
+
+summary(clb173_PhishingTestData$Age)
+table(clb173_PhishingTestData$Age)
+pie(table(clb173_PhishingTestData$Age),main=" clb173 Age")
+
+table(clb173_PhishingTestData$MaritalStatus)
+pie(table(clb173_PhishingTestData$MaritalStatus),main=" clb173 Marital Status")
+
+table(clb173_PhishingTestData$Gender)
+pie(table(clb173_PhishingTestData$Gender),main=" clb173 Gender")
+
+summary(clb173_PhishingTestData$Salary)
+table(clb173_PhishingTestData$Salary)
+hist(clb173_PhishingTestData$Salary, main="clb173 Salary")
+
+summary(clb173_PhishingTestData$TotalChildren)
+table(clb173_PhishingTestData$TotalChildren)
+pie(table(clb173_PhishingTestData$TotalChildren),main=" clb173 TotalChildren")	
+
+summary(clb173_PhishingTestData$NumberChildrenAtHome)
+table(clb173_PhishingTestData$NumberChildrenAtHome)
+pie(table(clb173_PhishingTestData$NumberChildrenAtHome),main=" clb173 NumberChildrenAtHome")	
+
+table(clb173_PhishingTestData$EducationLevel)
+pie(table(clb173_PhishingTestData$EducationLevel),main=" clb173 EducationLevel")	
+
+table(clb173_PhishingTestData$Occupation)
+pie(table(clb173_PhishingTestData$Occupation),main=" clb173 Occupation")	
+
+table(clb173_PhishingTestData$HouseOwnerFlag)
+pie(table(clb173_PhishingTestData$HouseOwnerFlag),main=" clb173 HouseOwnerFlag")	
+
+summary(clb173_PhishingTestData$NumberCarsOwned)
+table(clb173_PhishingTestData$NumberCarsOwned)
+pie(table(clb173_PhishingTestData$NumberCarsOwned),main=" clb173 NumberCarsOwned")	
+
+table(clb173_PhishingTestData$NumberOfDevices)
+pie(table(clb173_PhishingTestData$NumberOfDevices),main=" clb173 NumberOfDevices")	
+
+summary(clb173_PhishingTestData$NumericNumberOfDevices)
+table(clb173_PhishingTestData$NumericNumberOfDevices)
+pie(table(clb173_PhishingTestData$NumericNumberOfDevices),main=" clb173 NumericNumberOfDevices")	
+
+table(clb173_PhishingTestData$PhishingTestDate)
+pie(table(clb173_PhishingTestData$PhishingTestDate),main=" clb173 PhishingTestDate")	
+
+table(clb173_PhishingTestData$Region)
+pie(table(clb173_PhishingTestData$Region),main=" clb173 Region")	
+
+#Fix the problem by deleting the row. #Sometimes survey responses must be excluded from analysis
+#Replace problem text in the next line with the string that is causing the problem
+tempDataFrame<-clb173_PhishingTestData[!(clb173_PhishingTestData$Region=="clb173"),]
+clb173_PhishingTestData<-tempDataFrame
+table(clb173_PhishingTestData$Region)
+
+table(clb173_PhishingTestData$Country)
+pie(table(clb173_PhishingTestData$Country),main=" clb173 Country")	
+
+table(clb173_PhishingTestData$PhishingTestResult)
+pie(table(clb173_PhishingTestData$PhishingTestResult),main=" clb173 PhishingTestResult")
+
+#================================================================================================
+# Association Rules
+#================================================================================================
+install.packages("arules")
+library(arules)
+clb173_arules_input=subset(clb173_PhishingTestData, 
+                        select = c("Age", "MaritalStatus",  "Gender", "Salary", "TotalChildren", 
+                                   "NumberChildrenAtHome", "EducationLevel", "Occupation", "HouseOwnerFlag",  
+                                   "NumberCarsOwned", "NumberOfDevices",  "Country",  
+                                   "PhishingTestResult"))
+str(clb173_arules_input)
+
+#Convert to data types that are arules friendly
+clb173_arules_input$Age<-as.factor(clb173_arules_input$Age)
+clb173_arules_input$Salary<-as.factor(clb173_arules_input$Salary)
+clb173_arules_input$TotalChildren<-as.factor(clb173_arules_input$TotalChildren)
+clb173_arules_input$NumberChildrenAtHome<-as.factor(clb173_arules_input$NumberChildrenAtHome)
+clb173_arules_input$HouseOwnerFlag<-as.factor(clb173_arules_input$HouseOwnerFlag)
+clb173_arules_input$NumberCarsOwned<-as.factor(clb173_arules_input$NumberCarsOwned)
+clb173_arules_input$PhishingTestResult<-as.character(clb173_arules_input$PhishingTestResult)
+str(clb173_arules_input)
+
+clb173_rules<-apriori(clb173_arules_input,
+               parameter=list(minlen=3, supp=0.05, conf=0.7),
+               appearance=list(rhs=c("PhishingTestResult=Fail","PhishingTestResult=Pass"),
+               default="lhs"),
+               control=list(verbose=F))
+clb173_rules.sorted <-sort(clb173_rules, by="count")
+inspect(clb173_rules.sorted)
+#if no rules are displayed, 
+#then you will need to adjust the values for support and/or confidence
+
+#delete the dataframe to save RAM
+rm(clb173_arules_input)
+rm(clb173_rules)
+rm(clb173_rules.sorted)
+#================================================================================================
+#Decision trees
+#================================================================================================
+#Split the data here so the same records will be used for training and testing
+Split <- sample(nrow(clb173_PhishingTestData),floor(nrow(clb173_PhishingTestData)*0.7))
+clb173_Train <- clb173_PhishingTestData[Split,]
+clb173_Test <- clb173_PhishingTestData[-Split,]
+
+# select a subset of the data for Decision Tree processing
+clb173_TrainTree=subset(clb173_Train, 
+             select = c("Age", "MaritalStatus",  "Gender", "Salary", "TotalChildren", 
+                        "NumberChildrenAtHome", "EducationLevel", "Occupation", "HouseOwnerFlag",  
+                        "NumberCarsOwned", "NumberOfDevices",  "Region", "Country",  
+                        "PhishingTestResult"))
+clb173_TestTree=subset(clb173_Test, 
+             select = c("Age", "MaritalStatus",  "Gender", "Salary", "TotalChildren", 
+                        "NumberChildrenAtHome", "EducationLevel", "Occupation", "HouseOwnerFlag",  
+                        "NumberCarsOwned", "NumberOfDevices",  "Region", "Country",  
+                        "PhishingTestResult"))
+
+str(clb173_TrainTree)  
+
+#load libraries
+library(caret)
+library(rpart)
+library(rattle)
+library(e1071)
+library(rpart.plot)
+library(RColorBrewer)
+library(ROCR)
+
+#create the tree, print out stats, and plot the tree
+clb173_TreeModel<-rpart(PhishingTestResult~ .,data=clb173_TrainTree,method= "class",parms= list(prior = c(0.3, 0.7)))
+predictionUsingTreeModel<-predict(clb173_TreeModel,clb173_TestTree,type="class")
+
+# take a screen snip of the confusion matrix output, record the sensitivity and specificity
+confusionMatrix(predictionUsingTreeModel,clb173_TestTree$PhishingTestResult, positive="Pass")
+
+# take a screen snip of the tree, everyone's decision tree should look different
+prp(clb173_TreeModel, faclen=0, cex=0.8, extra=1, main=" clb173 Decision Tree ")
+
+# create the ROC curve and plot it, then take a screen snip
+val1=predict(clb173_TreeModel, clb173_Test, type="prob")
+predictedValues<-prediction(val1[,2],clb173_Test$PhishingTestResult)
+performanceValues<-performance(predictedValues, "auc")
+roc_auc<-performanceValues@y.values[[1]]
+performanceValues<-performance(predictedValues, "tpr", "fpr")
+plot(performanceValues, col="blue", lwd=1.5, main=paste(" clb173 Decision Tree, AUC=", round(roc_auc,3)))
+
+#================================================================================================
+#Neural network
+#================================================================================================
+# install the neuralnet package
+install.packages("neuralnet")
+
+# load libraries
+library(neuralnet)
+
+clb173_Input=subset(clb173_PhishingTestData, 
+                    select = c("Age", "Salary", "TotalChildren", 
+                               "NumberChildrenAtHome", "HouseOwnerFlag",  
+                               "NumberCarsOwned", "NumericNumberOfDevices",   
+                               "NumericPhishingTestResult"))
+
+#Normalize the numeric data across all 5000 rows before splitting
+normalize <-function(x) {return ((x -min(x))/(max(x)-min(x)))}
+minMaxNormalizedData <-as.data.frame(lapply(clb173_Input, normalize))
+
+clb173_NN_Train <- minMaxNormalizedData[Split,]
+clb173_NN_Test <- minMaxNormalizedData[-Split,]
+
+str(clb173_NN_Train)  
+
+#Create the neural network 
+clb173_nn<-neuralnet(NumericPhishingTestResult~ Age+Salary+TotalChildren+NumberChildrenAtHome+HouseOwnerFlag
+                 +NumberCarsOwned+NumericNumberOfDevices,
+              data=clb173_NN_Train, hidden=c(2,1), linear.output= FALSE, threshold = 0.01, stepmax=1e+06)
+clb173_nn$result.matrix
+
+#Plot the neural network 
+plot(clb173_nn, main="clb173 Neural Network")
+
+#Calculate sensitivity and specificity
+clb173_testingSubset<-subset(clb173_NN_Test, select = c("Age", "Salary",  "TotalChildren", "NumberChildrenAtHome", "HouseOwnerFlag", 
+                                       "NumberCarsOwned", "NumericNumberOfDevices"))
+nn.results<-compute(clb173_nn, clb173_testingSubset)
+results <-data.frame(actual = clb173_NN_Test$NumericPhishingTestResult, prediction = nn.results$net.result)
+roundedresults<-sapply(results,round,digits=0)
+roundedresultsdf=data.frame(roundedresults)
+attach(roundedresultsdf)
+table(actual,prediction)
+library(caret)
+prediction<-as.factor(prediction)
+actual<-as.factor(actual)
+confusionMatrix(prediction,actual,positive="1")
+
+detach(package:neuralnet,unload = T)
+
+library(ROCR)
+predictedValues = prediction(nn.results$net.result, clb173_NN_Test$NumericPhishingTestResult)
+performanceValues<-performance(predictedValues, "auc")
+roc_auc<-performanceValues@y.values[[1]]
+pref <- performance(predictedValues, "tpr", "fpr")
+# Plot the neural net ROC Curve. It might plot in a separate window.
+plot(pref, col="blue", lwd=1.5, main=paste(" clb173 Neural Network, AUC=", round(roc_auc,3)))
+
+
+#delete the neural network data and model to save RAM
+rm(clb173_nn)
+rm(clb173_NN_Train)
+rm(clb173_NN_Test)
+rm(nn.results)
+#================================================================================================
+#Support Vector Machine (SVM)
+#================================================================================================
+
+#========================================
+# Begin SVM radial basis function
+#========================================
+library(e1071)
+
+minMaxNormalizedData$NumericPhishingTestResult<-as.factor(minMaxNormalizedData$NumericPhishingTestResult)
+
+clb173_svmModelTuning.out <- tune(svm, NumericPhishingTestResult~., data = minMaxNormalizedData, 
+              kernel = "radial", ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100)),scale=TRUE)
+clb173_svmModel <- clb173_svmModelTuning.out$best.model
+clb173_svmModel
+
+predictedValues <- predict(clb173_svmModel, minMaxNormalizedData)
+confusionMatrix(predictedValues,minMaxNormalizedData$NumericPhishingTestResult)
+
+
+pr <-prediction(as.numeric(predictedValues), as.numeric(minMaxNormalizedData$NumericPhishingTestResult))
+performanceValues<-performance(pr, "auc")
+roc_auc<-performanceValues@y.values[[1]]
+pref <- performance(pr, "tpr", "fpr")
+# Plot the SVM ROC Curve. It might plot in a separate window.
+plot(pref, col="blue", lwd=1.5, main=paste(" clb173 SVM Radial, AUC=", round(roc_auc,3)))
+
+#delete the SVM model to save RAM
+rm(clb173_svmModel)
+rm(clb173_svmModelTuning.out)
+
+#================================================================================================
+#================================================================================================
+#Clustering
+minMaxNormalizedData_noLabel<-minMaxNormalizedData
+minMaxNormalizedData_noLabel$NumericPhishingTestResult<-NULL
+#Perform kmeans clustering using 2 clusters
+clb173_kmeans.result <- kmeans(minMaxNormalizedData_noLabel, 2)
+clb173_kmeans.result
+table(minMaxNormalizedData$NumericPhishingTestResult, clb173_kmeans.result$cluster)
+
+plot(minMaxNormalizedData_noLabel[, c("Age", "Salary", "TotalChildren", "NumberChildrenAtHome","NumericNumberOfDevices")], col=clb173_kmeans.result$cluster)
+
+plot(minMaxNormalizedData_noLabel[, c("Age", "Salary")], col=clb173_kmeans.result$cluster)
+points(clb173_kmeans.result$centers[, c("Age", "Salary")], col=1:3, pch = 8, cex=2)
+
+install.packages("cluster")
+library (cluster)
+clb173_pam.result <-pam(minMaxNormalizedData_noLabel, 2)
+table(minMaxNormalizedData$NumericPhishingTestResult, clb173_pam.result$clustering)
+
+clusplot (pam(minMaxNormalizedData_noLabel, 2), color=TRUE, shade=TRUE, lines=0)
+
